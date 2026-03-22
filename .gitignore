@@ -1,0 +1,15 @@
+# Environment files
+.env
+!.env.example
+# Dependencies
+node_modules/
+
+# Cache
+.cache/
+
+# Logs
+*.log
+*.logs
+
+# Tests
+tests/
