@@ -6,6 +6,9 @@ const {
   toPublicCoupon,
 } = require("../dto/coupon.dto");
 
+
+const mongoose = require("mongoose");
+
 class CouponService {
   /* ---------------- INTERNAL HELPERS ---------------- */
 
@@ -163,6 +166,38 @@ class CouponService {
       data: coupons.map(toPublicCoupon),
     };
   }
+
+async getAllToUserReedemCode(userId) {
+  const userObjectId = new mongoose.Types.ObjectId(userId); // ✅ convert string to ObjectId
+
+  const usedOrders = await Order.find({
+    userId: userObjectId,  // ✅ now matches DB
+    orderStatus: { $in: ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"] },
+    couponCode: { $exists: true, $ne: null, $ne: "" },
+  })
+    .select("couponCode")
+    .lean();
+
+  console.log("usedOrders:", usedOrders); // should now show the KUCHALAG2026 order
+
+  const usedCouponCodes = usedOrders.map((order) => order.couponCode);
+
+  console.log("usedCouponCodes:", usedCouponCodes); // should show ["KUCHALAG2026"]
+
+  const coupons = await Coupon.find({
+    isActive: true,
+    code: { $nin: usedCouponCodes },
+    expiresAt: { $gte: new Date() },
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return {
+    success: true,
+    message: "Coupons fetched successfully",
+    data: coupons.map(toPublicCoupon),
+  };
+}
 
   async getCouponById(id) {
     const coupon = await Coupon.findById(id).lean();

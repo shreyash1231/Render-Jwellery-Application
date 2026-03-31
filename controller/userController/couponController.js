@@ -38,6 +38,12 @@ const couponController = {
     const result = await couponService.getAllCoupons();
     return successHandler(res, 200, "Coupons fetched successfully", result.data);
   }),
+  
+  getAllToUserCoupons: asyncHandler(async (req, res) => {
+  const userId = req.user.id; // extracted from token middleware
+  const result = await couponService.getAllToUserReedemCode(userId);
+  return successHandler(res, 200, result.message, result.data);
+}),
 
   checkCouponUsage: asyncHandler(async (req, res) => {
     const userId = req.user.id;

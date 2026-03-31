@@ -6096,7 +6096,7 @@ table {
     linear-gradient(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.45)),
     url("../images/slider.png");
   background-repeat: no-repeat;
-  background-size: 100% 100%;
+  background-size: cover;        /* ← change this */
   background-position: center;
 }
 
