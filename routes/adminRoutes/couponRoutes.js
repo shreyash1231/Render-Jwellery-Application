@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const couponController = require("../../controller/adminController/couponController");
 const validateObjectId = require("../../middleware/validateObjectId");
+const authorize = require("../../middleware/authMiddleware");
 
 router.route("/create-coupon").post(couponController.createCoupon);
 router.route("/get-all-coupons").get(couponController.getAllCoupons);

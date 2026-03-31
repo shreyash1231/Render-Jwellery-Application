@@ -28,6 +28,12 @@ const couponController = {
     return successHandler(res, 200, result.message, result.data);
   }),
 
+getAllToUserCoupons: asyncHandler(async (req, res) => {
+  const userId = req.user.id; // extracted from token middleware
+  const result = await couponService.getAllToUserReedemCode(userId);
+  return successHandler(res, 200, result.message, result.data);
+}),
+
   getCouponById: asyncHandler(async (req, res) => {
     const { id } = req.params;
     const result = await couponService.getCouponById(id);

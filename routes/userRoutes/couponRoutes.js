@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const couponController = require("../../controller/userController/couponController");
+const couponController1 = require("../../controller/adminController/couponController");
 const authorize = require("../../middleware/authMiddleware");
 
 router
@@ -9,6 +10,7 @@ router
 router
   .route("/get-all-coupons")
   .get(authorize(["USER"]), couponController.getAllCoupons);
+router.route("/get-all-user-coupons").get(authorize(["USER"]), couponController.getAllToUserCoupons);
 router
   .route("/check-coupon-usage/:couponCode")
   .get(authorize(["USER"]), couponController.checkCouponUsage);
