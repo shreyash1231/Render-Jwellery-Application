@@ -25,6 +25,7 @@ const createProductValidation = (data) => {
     features: Joi.string().min(5).max(500).optional(),
 
     use: Joi.string().min(5).max(500).optional(),
+    bestSeller: Joi.boolean().optional(),
 
     additionalInfo: Joi.string().min(5).max(500).optional(),
 
@@ -69,6 +70,7 @@ const updateProductValidation = (data) => {
     description: Joi.string().min(10).max(500).optional(),
 
     benefits: Joi.string().min(5).max(500).optional(),
+    bestSeller: Joi.boolean().optional(),
 
     features: Joi.string().min(5).max(500).optional(),
 

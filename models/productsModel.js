@@ -12,6 +12,10 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    bestSeller: {
+  type: Boolean,
+  default: false,
+},
 
     mrp: {
       type: Number,
@@ -43,6 +47,7 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
 
     benefits: String,
     features: String,

@@ -30,7 +30,8 @@ async function uploadFileToS3(file) {
 
     await s3.send(new PutObjectCommand(uploadParams));
 
-    const fileUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+    console.log(fileName);
+    const fileUrl = fileName;
 
     return fileUrl;
   } catch (error) {
