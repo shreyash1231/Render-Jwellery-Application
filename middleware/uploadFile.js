@@ -30,7 +30,6 @@ async function uploadFileToS3(file) {
 
     await s3.send(new PutObjectCommand(uploadParams));
 
-    console.log(fileName);
     const fileUrl = fileName;
 
     return fileUrl;
