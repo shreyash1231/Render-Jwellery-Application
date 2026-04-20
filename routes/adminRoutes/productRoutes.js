@@ -11,5 +11,13 @@ router.route('/update-product/:id').patch(uploadLimiter, upload.array('images', 
 router.route('/delete-product/:id').delete(productController.deleteProduct);
 router.route('/delete-product-image/:productId').patch(productController.deleteProductImage);
 
-
+router.post(
+  "/add-product-shoptolook",
+  uploadLimiter,
+  upload.fields([
+    { name: "video", maxCount: 1 },
+    { name: "image", maxCount: 1 },
+  ]),
+  productController.createshoptolookProduct,
+);
 module.exports = router;

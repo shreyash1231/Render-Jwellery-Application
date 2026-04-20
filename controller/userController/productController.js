@@ -11,9 +11,19 @@ const { uploadFileToS3 } = require("../../middleware/uploadFile");
 
 const productController = {
 
+  getbestSellerProducts: asyncHandler(async (req, res) => {
+    const result = await ProductService.getallbestSellerProducts(req.query);
+    return successHandler(res, 200, result.message, result.data);
+  }),
+
   getAllProducts: asyncHandler(async (req, res) => {
     const result = await ProductService.getAllProducts(req.query);
     return successHandler(res, 200, result.message, result.data);
+  }),
+
+  getAllShoptolook: asyncHandler(async (req, res) => {
+    const result = await ProductService.getAllShoptolookService();
+    return successHandler(res, 200, "Shoptolook products fetched successfully", result);
   }),
 
   getProductById: asyncHandler(async (req, res) => {

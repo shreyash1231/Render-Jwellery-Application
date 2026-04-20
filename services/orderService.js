@@ -84,7 +84,11 @@ class OrderService {
       appliedCoupon = couponResult.data?.coupon || null;
       amount = Math.max(amount - discountAmount, 0);
     }
-
+    let shippingCharge = 0;
+    if (amount <= 5000) {
+      shippingCharge = 200;
+      amount += shippingCharge;
+    }
     // 🔹 STEP 3: Transaction (stock + order)
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -118,6 +122,7 @@ class OrderService {
             items: orderItems,
             amount,
             discountAmount,
+            shippingCharge,  
             couponCode: appliedCoupon ? appliedCoupon.code : null,
             currency,
             orderStatus: "PLACED",

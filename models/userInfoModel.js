@@ -9,13 +9,6 @@ const userInfoSchema = new mongoose.Schema(
       minlength: 2,
       maxlength: 100,
     },
-    email: {
-      type: String,
-      required: true,
-      trim: true,
-      lowercase: true,
-      index: true,
-    },
     mobileNumber: {
       type: String,
       required: true,

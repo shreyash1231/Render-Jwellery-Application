@@ -13,6 +13,35 @@ const faqSchema = Joi.object({
   }),
 });
 
+const createshoptolookValidation = (body) => {
+  const schema = Joi.object({
+    title: Joi.string().trim().min(2).max(100).required().messages({
+      "string.empty": "Title is required",
+      "any.required": "Title is required",
+    }),
+
+    description: Joi.string().trim().optional(),
+
+    videoUrl: Joi.string()
+      .required()
+      .pattern(/^(https?:\/\/.+|uploads\/.+)$/)
+      .messages({
+        "string.pattern.base": "Video URL must be a valid URL or uploads path",
+        "string.empty": "Video URL is required",
+        "any.required": "Video URL is required",
+      }),
+
+    imageUrl: Joi.string()
+      .optional()
+      .pattern(/^(https?:\/\/.+|uploads\/.+)$/)
+      .messages({
+        "string.pattern.base": "Image URL must be a valid URL or uploads path",
+      }),
+  });
+
+    return schema.validate(body, { abortEarly: false });
+};
+
 /* ---------------- CREATE PRODUCT ---------------- */
 const createProductValidation = (data) => {
   const schema = Joi.object({
@@ -113,4 +142,5 @@ const updateProductValidation = (data) => {
 module.exports = {
   createProductValidation,
   updateProductValidation,
+  createshoptolookValidation 
 };
