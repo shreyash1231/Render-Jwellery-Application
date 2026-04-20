@@ -1,8 +1,63 @@
 const Product = require('../models/productsModel');
 const Category = require('../models/categoriesModal');
-
+const Shoptolook = require('../models/shoptolook.model');
 class ProductService {
-  /* ---------------- CREATE PRODUCT ---------------- */
+
+  async createshoptolookServiceProduct(data) {
+    const product = await Shoptolook.create(data); // ✅ use Shoptolook not shoptolook
+
+    return {
+      success: true,
+      message: "Product created successfully",
+      data: product,
+    };
+  }
+
+
+    async getallbestSellerProducts(query) {
+    const { limit = 4 } = query; // max 4 products
+  
+    const filter = {
+      bestSeller: true,
+      isActive: true,
+    };
+  
+    const [products, total] = await Promise.all([
+      Product.find(filter)
+        .populate({
+          path: 'categoryId',
+          select: 'name isShopByProduct',
+        })
+        .limit(Number(limit)) 
+        .sort({ createdAt: -1 }),
+  
+      Product.countDocuments(filter),
+    ]);
+  
+    const mappedProducts = products.map((p) => {
+      const discountPercent = Math.round(
+        ((p.mrp - p.sellingPrice) / p.mrp) * 100
+      );
+  
+      return {
+        ...p.toObject(),
+        discountPercent,
+      };
+    });
+  
+    return {
+      success: true,
+      message: 'Best seller products fetched successfully',
+      data: {
+        products: mappedProducts,
+        totalItems: total,
+        count: mappedProducts.length, // how many returned (max 4)
+      },
+    };
+  }
+  /* -
+  
+  --------------- CREATE PRODUCT ---------------- */
   async createProduct(productData) {
     // 🔐 Normalize prices
     const sellingPrice = Number(productData.sellingPrice);
@@ -41,7 +96,16 @@ class ProductService {
     };
   }
 
-  /* ---------------- GET ALL PRODUCTS ---------------- */
+  async getAllShoptolookService() {
+    const products = await Shoptolook.find().sort({ createdAt: -1 }).lean();
+
+    return {
+      success: true,
+      message: "Shoptolook products fetched successfully",
+      data: products,
+    };
+  }
+    /* ---------------- GET ALL PRODUCTS ---------------- */
   async getAllProducts(query) {
     const { page = 1, limit = 40, categoryId } = query;
 

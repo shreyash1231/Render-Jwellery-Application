@@ -7,10 +7,6 @@ const createUserInfoValidation = (body) => {
       "string.min": "Name must be at least 2 characters",
       "string.max": "Name cannot exceed 100 characters",
     }),
-    email: Joi.string().trim().lowercase().email().required().messages({
-      "string.empty": "Email is required",
-      "string.email": "Invalid email format",
-    }),
     mobileNumber: Joi.string()
       .trim()
       .pattern(/^\+?[0-9]{10,15}$/)

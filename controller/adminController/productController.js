@@ -2,6 +2,7 @@ const ProductService = require("../../services/productService");
 const {
   createProductValidation,
   updateProductValidation,
+  createshoptolookValidation 
 } = require("../../validation/productValidation");
 
 const asyncHandler = require("../../utils/asyncHandler");
@@ -11,6 +12,49 @@ const validationError = require("../../utils/validationError");
 const { uploadFileToS3 } = require("../../middleware/uploadFile");
 
 const productController = {
+
+ createshoptolookProduct: asyncHandler(async (req, res) => {
+  // ✅ Build clean object from req.body
+  const reqObj = {
+    title: req.body.title,
+    description: req.body.description,
+  };
+
+  let videoUrl = null;
+  let imageUrl = null;
+
+  if (req.files) {
+    if (req.files.video?.[0]) {
+      videoUrl = await uploadFileToS3(req.files.video[0]);
+    }
+    if (req.files.image?.[0]) {
+      imageUrl = await uploadFileToS3(req.files.image[0]);
+    }
+  }
+
+  if (!videoUrl) {
+    return errorHandler(
+      { statusCode: 400, message: "Video is required" },
+      req,
+      res,
+    );
+  }
+
+  reqObj.videoUrl = videoUrl;
+  if (imageUrl) reqObj.imageUrl = imageUrl;
+
+  const { error, value } = createshoptolookValidation(reqObj);
+  if (error) {
+    return errorHandler(
+      { statusCode: 400, message: validationError(error) },
+      req,
+      res,
+    );
+  }
+
+  const result = await ProductService.createshoptolookServiceProduct(value);
+  return successHandler(res, 201, "Product created successfully", result);
+}),
   /* ---------------- CREATE PRODUCT ---------------- */
   createProduct: asyncHandler(async (req, res) => {
     const files = req.files || [];
