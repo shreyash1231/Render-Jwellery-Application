@@ -155,6 +155,7 @@ class OrderService {
   async getOrderById(orderId) {
     const order = await Order.findById(orderId)
       .populate("items.productId")
+      .populate("userId", "firstName lastName email")
       .populate("addressId");
 
     if (!order) {
@@ -188,7 +189,7 @@ class OrderService {
     const orders = await Order.find()
       .sort({ createdAt: -1 })
       .populate("items.productId")
-      .populate("userId", "name email")
+      .populate("userId", "firstName lastName email")
       .populate("addressId").lean();
 
     return {
