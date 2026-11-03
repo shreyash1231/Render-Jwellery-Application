@@ -25,13 +25,7 @@ const createCouponValidation = (data) => {
       })
       .required(),
 
-    maxDiscount: Joi.number()
-      .min(1)
-      .when("type", {
-        is: "PERCENT",
-        then: Joi.number().required(),
-        otherwise: Joi.forbidden(),
-      }),
+    maxDiscount: Joi.number().min(1).allow(null).optional(),
 
     minOrderValue: Joi.number()
       .min(0)
@@ -43,11 +37,12 @@ const createCouponValidation = (data) => {
       }
       const date = value instanceof Date ? value : new Date(value);
       if (isNaN(date.getTime())) {
-        return helpers.error("date.base");
+        return helpers.message("Expiry date is not a valid date");
       }
-      const now = new Date();
-      if (date <= now) {
-        return helpers.error("date.greater", { limit: "now" });
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      if (date < startOfToday) {
+        return helpers.message("Expiry date cannot be in the past");
       }
       return date;
     })
@@ -99,14 +94,7 @@ const updateCouponValidation = (data) => {
       })
       .optional(),
 
-    maxDiscount: Joi.number()
-      .min(1)
-      .when("type", {
-        is: "PERCENT",
-        then: Joi.number().required(),
-        otherwise: Joi.forbidden(),
-      })
-      .optional(),
+    maxDiscount: Joi.number().min(1).allow(null).optional(),
 
     minOrderValue: Joi.number()
       .min(0)
@@ -118,11 +106,12 @@ const updateCouponValidation = (data) => {
       }
       const date = value instanceof Date ? value : new Date(value);
       if (isNaN(date.getTime())) {
-        return helpers.error("date.base");
+        return helpers.message("Expiry date is not a valid date");
       }
-      const now = new Date();
-      if (date <= now) {
-        return helpers.error("date.greater", { limit: "now" });
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      if (date < startOfToday) {
+        return helpers.message("Expiry date cannot be in the past");
       }
       return date;
     })

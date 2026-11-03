@@ -30,6 +30,17 @@ const categoryController = {
       );
     }
 
+    if ('parentCategory' in req.body) {
+      req.body.parentCategory = req.body.parentCategory || null;
+      const parentError = await CategoryService.validateParent(
+        null,
+        req.body.parentCategory,
+      );
+      if (parentError) {
+        return errorHandler({ statusCode: 400, message: parentError }, req, res);
+      }
+    }
+
     const result = await CategoryService.createCategory(req.body);
     return successHandler(res, 201, result.message, result.data);
   }),
@@ -71,6 +82,17 @@ const categoryController = {
         req,
         res,
       );
+    }
+
+    if ('parentCategory' in req.body) {
+      req.body.parentCategory = req.body.parentCategory || null;
+      const parentError = await CategoryService.validateParent(
+        req.params.id,
+        req.body.parentCategory,
+      );
+      if (parentError) {
+        return errorHandler({ statusCode: 400, message: parentError }, req, res);
+      }
     }
 
     const result = await CategoryService.updateCategory(

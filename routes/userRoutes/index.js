@@ -25,6 +25,7 @@ const bannerRoutes = require("./bannerRoutes");
 const couponRoutes = require("./couponRoutes");
 const aboutUsRoutes=require("./aboutUsRoutes")
 const customOrderRoutes=require("./customOrderRoutes")
+const marqueeRoutes = require("./marqueeRoutes");
 
 appRoutes.use("/user", authRoutes);
 appRoutes.use("/user", orderRoutes);
@@ -50,5 +51,6 @@ appRoutes.use("/user", signatureRoutes);
 appRoutes.use("/user", couponRoutes);
 appRoutes.use("/user", aboutUsRoutes);
 appRoutes.use("/user", customOrderRoutes);
+appRoutes.use("/user", marqueeRoutes);
 
 module.exports = appRoutes;

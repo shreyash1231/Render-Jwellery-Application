@@ -11,7 +11,7 @@ class CategoryService {
   }
 
   async getAllCategories() {
-    const categories = await Category.find().lean();
+    const categories = await Category.find().populate("parentCategory", "name").lean();
     
     return {
       success: true,
@@ -21,8 +21,7 @@ class CategoryService {
   }
 
    async getShopByFuncCategories() {
-    const categories = await Category.find({isShopByProduct:false}).lean();
-    console.log
+    const categories = await Category.find({isShopByProduct:false}).populate("parentCategory", "name").lean();
     return {
       success: true,
       message: "Categories fetched successfully",
@@ -31,7 +30,7 @@ class CategoryService {
   }
 
  async getShopByProdCategories() {
-    const categories = await Category.find({isShopByProduct:true}).lean();
+    const categories = await Category.find({isShopByProduct:true}).populate("parentCategory", "name").lean();
     return {
       success: true,
       message: "Categories fetched successfully",
@@ -41,7 +40,7 @@ class CategoryService {
 
 
   async getCategoryById(id) {
-    const category = await Category.findById(id).lean();
+    const category = await Category.findById(id).populate("parentCategory", "name").lean();
     return {
       success: true,
       message: "Category fetched successfully",
@@ -61,8 +60,31 @@ class CategoryService {
     };
   }
 
+  // Returns an error message if parentId can't be used as the parent of categoryId
+  async validateParent(categoryId, parentId) {
+    if (!parentId) return null;
+    if (categoryId && String(parentId) === String(categoryId)) {
+      return "A category cannot be its own parent";
+    }
+
+    // Walk up from the new parent; reaching categoryId would create a loop
+    let current = await Category.findById(parentId).select("parentCategory").lean();
+    if (!current) return "Parent category not found";
+    while (categoryId && current?.parentCategory) {
+      if (String(current.parentCategory) === String(categoryId)) {
+        return "A category cannot be placed inside one of its own sub-categories";
+      }
+      current = await Category.findById(current.parentCategory).select("parentCategory").lean();
+    }
+    return null;
+  }
+
   async deleteCategory(id) {
     const category = await Category.findByIdAndDelete(id);
+    if (category) {
+      // Sub-categories of a deleted category become top-level instead of pointing at nothing
+      await Category.updateMany({ parentCategory: id }, { parentCategory: null });
+    }
     return {
       success: true,
       message: "Category deleted successfully",

@@ -20,6 +20,13 @@ const createCategoryValidation = (data) => {
           "Logo must be a valid URL or uploads path",
       }),
               isShopByProduct:joi.boolean().optional(),
+    parentCategory: joi.string()
+      .allow("", null)
+      .optional()
+      .pattern(/^[0-9a-fA-F]{24}$/)
+      .messages({
+        "string.pattern.base": "Parent category must be a valid category id",
+      }),
 
   });
   return schema.validate(data);
@@ -46,6 +53,13 @@ const updateCategoryValidation = (data) => {
             "Logo must be a valid URL or uploads path",
         }),
         isShopByProduct:joi.boolean().optional(),
+      parentCategory: joi.string()
+        .allow("", null)
+        .optional()
+        .pattern(/^[0-9a-fA-F]{24}$/)
+        .messages({
+          "string.pattern.base": "Parent category must be a valid category id",
+        }),
     })
     .min(1);
   return schema.validate(data);

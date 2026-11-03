@@ -19,6 +19,12 @@ const categorySchema = new mongoose.Schema({
     type:Boolean,
     default:false
   },
+  // null = top-level category; otherwise shown inside its parent (e.g. Birthday inside Gift Item)
+  parentCategory: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Category",
+    default: null,
+  },
   stocks: {
     type: Number,
     default: 0,
@@ -27,5 +33,6 @@ const categorySchema = new mongoose.Schema({
 
 categorySchema.index({ name: 1 });
 categorySchema.index({ stocks: -1 });
+categorySchema.index({ parentCategory: 1 });
 
 module.exports = mongoose.model("Category", categorySchema);
