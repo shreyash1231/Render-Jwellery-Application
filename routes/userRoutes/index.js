@@ -27,6 +27,8 @@ const aboutUsRoutes=require("./aboutUsRoutes")
 const customOrderRoutes=require("./customOrderRoutes")
 const marqueeRoutes = require("./marqueeRoutes");
 const siteSettingsRoutes = require("./siteSettingsRoutes");
+const imageRoutes = require("./imageRoutes");
+const collectionRoutes = require("./collectionRoutes");
 
 appRoutes.use("/user", authRoutes);
 appRoutes.use("/user", orderRoutes);
@@ -54,5 +56,7 @@ appRoutes.use("/user", aboutUsRoutes);
 appRoutes.use("/user", customOrderRoutes);
 appRoutes.use("/user", marqueeRoutes);
 appRoutes.use("/user", siteSettingsRoutes);
+appRoutes.use("/user", imageRoutes);
+appRoutes.use("/user", collectionRoutes);
 
 module.exports = appRoutes;

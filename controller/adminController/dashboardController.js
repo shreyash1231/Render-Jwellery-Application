@@ -6,7 +6,8 @@ const successHandler = require("../../middleware/globalSuccessHandler");
 
 exports.getDashboardStats = asyncHandler(async (req, res) => {
   try {
-    const stats = await DashboardService.getDashboardStats();
+    // range = 7 | 30 | 90 | 365 days; anything else means all time
+    const stats = await DashboardService.getDashboardStats({ range: req.query.range });
     return successHandler(
       res,
       200,
