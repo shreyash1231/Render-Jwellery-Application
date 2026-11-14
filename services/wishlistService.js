@@ -1,8 +1,16 @@
 const Wishlist = require("../models/wishlistModel");
+const discountService = require("./discountService");
 
 const wishlistPopulateOptions = {
   path: "products",
-  select: "name imageUrl quantity sellingPrice mrp",
+  select: "name imageUrl quantity sellingPrice mrp categoryId",
+};
+
+// Plain copy of the populated wishlist with live offer prices on its products
+const withOffers = async (wishlist) => {
+  const data = wishlist.toObject ? wishlist.toObject() : wishlist;
+  await discountService.applyOffers(data.products);
+  return data;
 };
 
 class WishlistService {
@@ -23,7 +31,7 @@ class WishlistService {
     return {
       success: true,
       message: "Wishlist fetched successfully",
-      data: wishlist,
+      data: await withOffers(wishlist),
     };
   }
 
@@ -39,7 +47,7 @@ class WishlistService {
       return {
         success: true,
         message: "Product already exists in wishlist",
-        data: wishlist,
+        data: await withOffers(wishlist),
       };
     }
 
@@ -50,7 +58,7 @@ class WishlistService {
     return {
       success: true,
       message: "Product added to wishlist successfully",
-      data: wishlist,
+      data: await withOffers(wishlist),
     };
   }
 
@@ -67,7 +75,7 @@ class WishlistService {
     return {
       success: true,
       message: "Product removed from wishlist successfully",
-      data: wishlist,
+      data: await withOffers(wishlist),
     };
   }
 }

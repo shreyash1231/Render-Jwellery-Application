@@ -2,6 +2,7 @@ const Collection = require("../models/collectionModel");
 const Category = require("../models/categoriesModal");
 const Product = require("../models/productsModel");
 const { ErrorResponse } = require("../utils/response");
+const discountService = require("./discountService");
 
 const POPULATE = [
   { path: "items.category", select: "name imageUrl" },
@@ -131,6 +132,8 @@ class CollectionService {
       .populate(STOREFRONT_POPULATE)
       .lean();
 
+    await discountService.applyOffers(collections.flatMap(storefrontProducts));
+
     const data = collections
       .map((c) => {
         const products = storefrontProducts(c);
@@ -154,6 +157,7 @@ class CollectionService {
     if (!collection) throw new ErrorResponse("Collection not found", 404);
 
     const products = storefrontProducts(collection);
+    await discountService.applyOffers(products);
     return {
       success: true,
       message: "Collection fetched successfully",

@@ -1,4 +1,5 @@
 const ProductService = require("../../services/productService");
+const discountService = require("../../services/discountService");
 const {
   createProductValidation,
   updateProductValidation,
@@ -13,11 +14,13 @@ const productController = {
 
   getbestSellerProducts: asyncHandler(async (req, res) => {
     const result = await ProductService.getallbestSellerProducts(req.query);
+    await discountService.applyOffers(result.data.products);
     return successHandler(res, 200, result.message, result.data);
   }),
 
   getAllProducts: asyncHandler(async (req, res) => {
     const result = await ProductService.getAllProducts(req.query);
+    await discountService.applyOffers(result.data.products);
     return successHandler(res, 200, result.message, result.data);
   }),
 
@@ -37,6 +40,7 @@ const productController = {
       );
     }
 
+    await discountService.applyOffers([result.data]);
     return successHandler(res, 200, result.message, result.data);
   }),
 };

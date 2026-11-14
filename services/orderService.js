@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Order = require("../models/orderModel");
 const Product = require("../models/productsModel");
 const CouponService = require("./couponService");
+const discountService = require("./discountService");
 const Address = require("../models/addressModel");
 
 class OrderService {
@@ -43,6 +44,8 @@ class OrderService {
 
     const productIds = items.map((i) => i.productId);
     const products = await Product.find({ _id: { $in: productIds } }).lean();
+    // Live category/product offers lower sellingPrice before anything is charged
+    await discountService.applyOffers(products);
     const productMap = new Map(products.map((p) => [p._id.toString(), p]));
 
     let amount = 0;

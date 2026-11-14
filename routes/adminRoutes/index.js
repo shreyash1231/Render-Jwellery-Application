@@ -27,6 +27,7 @@ const customOrderRoutes = require("./customOrderRoutes");
 const marqueeRoutes = require("./marqueeRoutes");
 const siteSettingsRoutes = require("./siteSettingsRoutes");
 const collectionRoutes = require("./collectionRoutes");
+const discountRoutes = require("./discountRoutes");
 
 appRoutes.use("/admin", authRoutes);
 appRoutes.use("/admin", authorize(["ADMIN"]), productRoutes);
@@ -55,5 +56,6 @@ appRoutes.use("/admin", authorize(["ADMIN"]), customOrderRoutes);
 appRoutes.use("/admin", authorize(["ADMIN"]), marqueeRoutes);
 appRoutes.use("/admin", authorize(["ADMIN"]), siteSettingsRoutes);
 appRoutes.use("/admin", authorize(["ADMIN"]), collectionRoutes);
+appRoutes.use("/admin", authorize(["ADMIN"]), discountRoutes);
 
 module.exports = appRoutes;

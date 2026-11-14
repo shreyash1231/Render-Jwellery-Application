@@ -1,14 +1,18 @@
 const Cart = require("../models/cartModel");
+const discountService = require("./discountService");
 
 class CartService {
   async getCartByUser(userId) {
     let cart = await Cart.findOne({ userId }).populate({
       path: "items.productId",
-      select: "name imageUrl quantity sellingPrice mrp",
+      select: "name imageUrl quantity sellingPrice mrp categoryId",
     }).lean();
 
     if (!cart) {
       cart = await Cart.create({ userId, items: [] });
+    } else {
+      // Show live offer prices, the same ones the order will be charged at
+      await discountService.applyOffers(cart.items.map((i) => i.productId));
     }
 
     return {
