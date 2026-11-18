@@ -3,6 +3,7 @@ const Order = require("../models/orderModel");
 const Product = require("../models/productsModel");
 const CouponService = require("./couponService");
 const discountService = require("./discountService");
+const siteSettingsService = require("./siteSettingsService");
 const Address = require("../models/addressModel");
 
 class OrderService {
@@ -87,11 +88,9 @@ class OrderService {
       appliedCoupon = couponResult.data?.coupon || null;
       amount = Math.max(amount - discountAmount, 0);
     }
-    let shippingCharge = 0;
-    if (amount <= 5000) {
-      shippingCharge = 200;
-      amount += shippingCharge;
-    }
+    // Delivery charge and free-delivery limit are set by the admin (Delivery page)
+    const shippingCharge = await siteSettingsService.getShippingCharge(amount);
+    amount += shippingCharge;
     // 🔹 STEP 3: Transaction (stock + order)
     const session = await mongoose.startSession();
     session.startTransaction();

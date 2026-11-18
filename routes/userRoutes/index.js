@@ -29,6 +29,7 @@ const marqueeRoutes = require("./marqueeRoutes");
 const siteSettingsRoutes = require("./siteSettingsRoutes");
 const imageRoutes = require("./imageRoutes");
 const collectionRoutes = require("./collectionRoutes");
+const reviewRoutes = require("./reviewRoutes");
 
 appRoutes.use("/user", authRoutes);
 appRoutes.use("/user", orderRoutes);
@@ -58,5 +59,6 @@ appRoutes.use("/user", marqueeRoutes);
 appRoutes.use("/user", siteSettingsRoutes);
 appRoutes.use("/user", imageRoutes);
 appRoutes.use("/user", collectionRoutes);
+appRoutes.use("/user", reviewRoutes);
 
 module.exports = appRoutes;

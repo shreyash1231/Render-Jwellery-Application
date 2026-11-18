@@ -1,4 +1,5 @@
 const Category = require('../models/categoriesModal');
+const ProductCategory = require('../models/productCategoryModel');
 
 class CategoryService {
   async createCategory(data) {
@@ -84,6 +85,7 @@ class CategoryService {
     if (category) {
       // Sub-categories of a deleted category become top-level instead of pointing at nothing
       await Category.updateMany({ parentCategory: id }, { parentCategory: null });
+      await ProductCategory.deleteMany({ category: id });
     }
     return {
       success: true,

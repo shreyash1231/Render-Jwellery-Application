@@ -1,6 +1,7 @@
 const Product = require('../models/productsModel');
 const Category = require('../models/categoriesModal');
 const Shoptolook = require('../models/shoptolook.model');
+const ProductCategory = require('../models/productCategoryModel');
 class ProductService {
 
   async createshoptolookServiceProduct(data) {
@@ -110,7 +111,11 @@ class ProductService {
     const { page = 1, limit = 40, categoryId } = query;
 
     const filter = {};
-    if (categoryId) filter.categoryId = categoryId;
+    if (categoryId) {
+      // Main category, or an active extra category set on the Multi Category page
+      const extraIds = await ProductCategory.find({ category: categoryId, isActive: true }).distinct('product');
+      filter.$or = [{ categoryId }, { _id: { $in: extraIds } }];
+    }
 
     const skip = (page - 1) * limit;
 
@@ -236,6 +241,7 @@ class ProductService {
       { _id: product.categoryId },
       { $inc: { stocks: -product.quantity } },
     );
+    await ProductCategory.deleteMany({ product: product._id });
 
     return {
       success: true,

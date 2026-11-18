@@ -72,6 +72,16 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
+    // Kept in step with the product's visible reviews by reviewService
+    ratingAverage: {
+      type: Number,
+      default: 0,
+    },
+    ratingCount: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true },
 );
