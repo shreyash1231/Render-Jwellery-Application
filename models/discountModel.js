@@ -3,8 +3,9 @@ const mongoose = require("mongoose");
 const SCOPES = ["category", "products"];
 const TYPES = ["percentage", "flat"];
 
-// A price offer on one category: either every product in it ("category")
+// A price offer on one or more categories: either every product in them ("category")
 // or only the chosen products ("products"), each of which can be switched off on its own.
+// A product is in a category through its main category or an active Multi Category link.
 // Runs between startDate and endDate while isActive is on.
 const discountSchema = new mongoose.Schema(
   {
@@ -13,10 +14,16 @@ const discountSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    categories: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
+      },
+    ],
+    // Single category of offers saved before multi-category support; moved into categories
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
-      required: true,
     },
     scope: {
       type: String,
@@ -65,7 +72,7 @@ const discountSchema = new mongoose.Schema(
 );
 
 discountSchema.index({ isActive: 1, startDate: 1, endDate: 1 });
-discountSchema.index({ category: 1 });
+discountSchema.index({ categories: 1 });
 
 module.exports = mongoose.model("Discount", discountSchema);
 module.exports.SCOPES = SCOPES;

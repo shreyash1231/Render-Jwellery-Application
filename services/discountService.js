@@ -1,10 +1,11 @@
 const Discount = require("../models/discountModel");
 const Category = require("../models/categoriesModal");
 const Product = require("../models/productsModel");
+const ProductCategory = require("../models/productCategoryModel");
 const { ErrorResponse } = require("../utils/response");
 
 const POPULATE = [
-  { path: "category", select: "name imageUrl" },
+  { path: "categories", select: "name imageUrl" },
   { path: "products.product", select: "name imageUrl sellingPrice mrp categoryId isActive" },
 ];
 
@@ -17,21 +18,57 @@ const offerPrice = (sellingPrice, discount) => {
   return Math.max(Math.round(base - off), Math.min(1, base));
 };
 
+const categoryIdsOf = (discount) => (discount.categories || []).map(idStr);
+
+// Category ids each product is listed in: its main category plus active Multi Category links.
+// Returns Map(productId -> Set(categoryId)).
+const categoriesOfProducts = async (products) => {
+  const map = new Map();
+  products.forEach((p) => {
+    const set = new Set();
+    if (p.categoryId) set.add(idStr(p.categoryId));
+    map.set(idStr(p._id), set);
+  });
+  if (!map.size) return map;
+  const links = await ProductCategory.find({ product: { $in: [...map.keys()] }, isActive: true })
+    .select("product category")
+    .lean();
+  links.forEach((l) => map.get(idStr(l.product))?.add(idStr(l.category)));
+  return map;
+};
+
 // Does this discount cover this product right now (dates and switches already checked)?
-const covers = (discount, product) => {
-  if (idStr(discount.category) !== idStr(product.categoryId)) return false;
+const covers = (discount, productId, productCats) => {
+  if (!categoryIdsOf(discount).some((c) => productCats.has(c))) return false;
   if (discount.scope === "category") return true;
   return (discount.products || []).some(
-    (p) => p.isActive !== false && idStr(p.product) === idStr(product._id)
+    (p) => p.isActive !== false && idStr(p.product) === productId
   );
 };
 
-// Drop products that were deleted after the discount was saved
+// Drop products and categories that were deleted after the discount was saved
 const clean = (discount) => {
   if (!discount) return discount;
   const d = discount.toObject ? discount.toObject() : discount;
   d.products = (d.products || []).filter((p) => p.product);
+  d.categories = (d.categories || []).filter(Boolean);
+  delete d.category;
   return d;
+};
+
+// Offers saved with a single `category` get it moved into `categories`, once per server start
+let migrated = null;
+const migrateOldDiscounts = () => {
+  if (!migrated) {
+    migrated = Discount.updateMany(
+      { category: { $ne: null }, $or: [{ categories: { $exists: false } }, { categories: { $size: 0 } }] },
+      [{ $set: { categories: ["$category"] } }, { $unset: "category" }]
+    ).catch((err) => {
+      migrated = null;
+      throw err;
+    });
+  }
+  return migrated;
 };
 
 class DiscountService {
@@ -45,8 +82,12 @@ class DiscountService {
       throw new ErrorResponse("End date must be on or after the start date", 400);
     }
 
-    const category = await Category.exists({ _id: d.category });
-    if (!category) throw new ErrorResponse("The selected category no longer exists", 400);
+    const catIds = categoryIdsOf(d);
+    if (!catIds.length) throw new ErrorResponse("Choose at least one category", 400);
+    const found = await Category.countDocuments({ _id: { $in: catIds } });
+    if (found !== catIds.length) {
+      throw new ErrorResponse("One of the selected categories no longer exists", 400);
+    }
 
     if (d.scope !== "products") return;
     if (!d.products?.length) throw new ErrorResponse("Select at least one product", 400);
@@ -56,8 +97,9 @@ class DiscountService {
     if (products.length !== ids.length) {
       throw new ErrorResponse("One of the selected products no longer exists", 400);
     }
-    const stray = products.find((p) => idStr(p.categoryId) !== idStr(d.category));
-    if (stray) throw new ErrorResponse(`"${stray.name}" is not in the selected category`, 400);
+    const cats = await categoriesOfProducts(products);
+    const stray = products.find((p) => !catIds.some((c) => cats.get(idStr(p._id)).has(c)));
+    if (stray) throw new ErrorResponse(`"${stray.name}" is not in the selected categories`, 400);
   }
 
   async createDiscount(data) {
@@ -70,15 +112,18 @@ class DiscountService {
   }
 
   async getAllDiscounts() {
+    await migrateOldDiscounts();
     const discounts = await Discount.find().sort({ createdAt: -1 }).populate(POPULATE).lean();
     return { success: true, message: "Discounts fetched successfully", data: discounts.map(clean) };
   }
 
   async updateDiscount(id, data) {
+    await migrateOldDiscounts();
     const discount = await Discount.findById(id);
     if (!discount) throw new ErrorResponse("Discount not found", 404);
 
     discount.set(data);
+    discount.category = undefined;
     if (discount.scope !== "products") discount.products = [];
     await this.assertValid(discount.toObject());
     await discount.save();
@@ -96,29 +141,32 @@ class DiscountService {
   // ---------- Storefront pricing ----------
 
   async getLiveDiscounts(categoryIds) {
+    await migrateOldDiscounts();
     const now = new Date();
     const filter = { isActive: true, startDate: { $lte: now }, endDate: { $gte: now } };
-    if (categoryIds) filter.category = { $in: categoryIds };
-    return Discount.find(filter).select("title category scope products type value endDate").lean();
+    if (categoryIds) filter.categories = { $in: categoryIds };
+    return Discount.find(filter).select("title categories scope products type value endDate").lean();
   }
 
   // Puts live offers on plain product objects, in place, and returns them.
   // sellingPrice becomes the offer price (the website, cart and checkout all read it);
-  // the price before the offer is kept in originalSellingPrice. When several offers
-  // cover a product the customer gets the lowest price.
+  // the price before the offer is kept in originalSellingPrice. A product listed in several
+  // categories can be covered by several offers; the customer gets the lowest price.
   async applyOffers(products) {
-    const list = (products || []).filter((p) => p && typeof p === "object" && p.categoryId);
+    const list = (products || []).filter((p) => p && typeof p === "object" && p._id && p.categoryId);
     if (!list.length) return products;
 
-    const categoryIds = [...new Set(list.map((p) => idStr(p.categoryId)))];
+    const cats = await categoriesOfProducts(list);
+    const categoryIds = [...new Set([...cats.values()].flatMap((s) => [...s]))];
     const discounts = await this.getLiveDiscounts(categoryIds);
     if (!discounts.length) return products;
 
     for (const p of list) {
+      const pid = idStr(p._id);
       let best = null;
       let bestPrice = p.sellingPrice;
       for (const d of discounts) {
-        if (!covers(d, p)) continue;
+        if (!covers(d, pid, cats.get(pid))) continue;
         const price = offerPrice(p.sellingPrice, d);
         if (price < bestPrice) {
           best = d;

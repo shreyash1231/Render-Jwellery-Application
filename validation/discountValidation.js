@@ -11,7 +11,15 @@ const fields = {
     "string.min": "Offer name must be at least 2 characters",
     "string.max": "Offer name must be at most 100 characters",
   }),
-  category: objectId.messages({ "any.required": "Choose a category" }),
+  categories: Joi.array()
+    .items(objectId)
+    .min(1)
+    .unique()
+    .messages({
+      "any.required": "Choose at least one category",
+      "array.min": "Choose at least one category",
+      "array.unique": "A category is selected twice",
+    }),
   scope: Joi.string().valid(...SCOPES),
   products: Joi.array()
     .items(
@@ -50,7 +58,7 @@ const crossChecks = (value, helpers) => {
 const createDiscountValidation = (data) =>
   Joi.object({
     title: fields.title.required(),
-    category: fields.category.required(),
+    categories: fields.categories.required(),
     scope: fields.scope.default("category"),
     products: fields.products.default([]),
     type: fields.type.required(),
