@@ -30,6 +30,7 @@ const collectionRoutes = require("./collectionRoutes");
 const discountRoutes = require("./discountRoutes");
 const reviewRoutes = require("./reviewRoutes");
 const productCategoryRoutes = require("./productCategoryRoutes");
+const categoryProductOrderRoutes = require("./categoryProductOrderRoutes");
 const seoRoutes = require("./seoRoutes");
 
 appRoutes.use("/admin", authRoutes);
@@ -62,6 +63,7 @@ appRoutes.use("/admin", authorize(["ADMIN"]), collectionRoutes);
 appRoutes.use("/admin", authorize(["ADMIN"]), discountRoutes);
 appRoutes.use("/admin", authorize(["ADMIN"]), reviewRoutes);
 appRoutes.use("/admin", authorize(["ADMIN"]), productCategoryRoutes);
+appRoutes.use("/admin", authorize(["ADMIN"]), categoryProductOrderRoutes);
 appRoutes.use("/admin", authorize(["ADMIN"]), seoRoutes);
 
 module.exports = appRoutes;

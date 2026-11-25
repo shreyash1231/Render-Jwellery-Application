@@ -3,6 +3,7 @@ const Category = require('../models/categoriesModal');
 const Shoptolook = require('../models/shoptolook.model');
 const ProductCategory = require('../models/productCategoryModel');
 const { uniqueSlug, findByKey } = require('../utils/slug');
+const categoryProductOrderService = require('./categoryProductOrderService');
 
 const cleanTags = (tags) =>
   [...new Set((tags || []).map((t) => String(t).trim().toLowerCase()).filter(Boolean))];
@@ -126,6 +127,19 @@ class ProductService {
 
     const skip = (page - 1) * limit;
 
+    // A category page follows the admin's order (Admin > Product Order); others stay newest first
+    if (categoryId) {
+      const ids = await categoryProductOrderService.orderedIds(categoryId, filter);
+      const pageIds = ids.slice(skip, skip + Number(limit));
+      const docs = await Product.find({ _id: { $in: pageIds } }).populate({
+        path: 'categoryId',
+        select: 'name isShopByProduct',
+      });
+      const byId = new Map(docs.map((d) => [String(d._id), d]));
+      const ordered = pageIds.map((id) => byId.get(id)).filter(Boolean);
+      return this.productPage(ordered, ids.length, page, limit);
+    }
+
     const [products, total] = await Promise.all([
       Product.find(filter)
         .populate({
@@ -139,6 +153,11 @@ class ProductService {
       Product.countDocuments(filter),
     ]);
 
+    return this.productPage(products, total, page, limit);
+  }
+
+  // One page of products in the shape the website and admin expect
+  productPage(products, total, page, limit) {
     const mappedProducts = products.map((p) => {
       const discountPercent = Math.round(
         ((p.mrp - p.sellingPrice) / p.mrp) * 100,
