@@ -45,11 +45,23 @@ const collectionSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
+    /* ---------- SEO ---------- */
+    // Short intro shown at the top of the collection page (also the fallback meta description)
+    description: { type: String, trim: true, default: "" },
+    // Readable URL: /collections/<slug>. Made from the title when left empty.
+    slug: { type: String, trim: true, lowercase: true },
+    slugHistory: { type: [String], default: [] },
+    metaTitle: { type: String, trim: true, default: "" },
+    metaDescription: { type: String, trim: true, default: "" },
+    metaKeywords: { type: String, trim: true, default: "" },
   },
   { timestamps: true }
 );
 
 collectionSchema.index({ title: 1 });
+collectionSchema.index({ slug: 1 }, { unique: true, sparse: true });
+collectionSchema.index({ slugHistory: 1 });
 
 module.exports = mongoose.model("Collection", collectionSchema);
 module.exports.PLACEMENTS = PLACEMENTS;

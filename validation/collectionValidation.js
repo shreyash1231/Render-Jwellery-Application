@@ -1,5 +1,10 @@
 const Joi = require("joi");
 const { PLACEMENTS } = require("../models/collectionModel");
+const { seoFields } = require("./seoValidation");
+
+const descriptionSchema = Joi.string().allow("").trim().max(1000).messages({
+  "string.max": "Intro text can be at most 1000 characters",
+});
 
 const placementSchema = Joi.string()
   .valid(...PLACEMENTS)
@@ -38,6 +43,8 @@ const createCollectionValidation = (data) => {
     items: itemsSchema.required(),
     placement: placementSchema.optional(),
     isActive: Joi.boolean().optional(),
+    description: descriptionSchema.optional(),
+    ...seoFields,
   });
   return schema.validate(data);
 };
@@ -48,6 +55,8 @@ const updateCollectionValidation = (data) => {
     items: itemsSchema.optional(),
     placement: placementSchema.optional(),
     isActive: Joi.boolean().optional(),
+    description: descriptionSchema.optional(),
+    ...seoFields,
   }).min(1);
   return schema.validate(data);
 };

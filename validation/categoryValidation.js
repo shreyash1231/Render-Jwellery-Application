@@ -1,4 +1,5 @@
 const joi = require("joi");
+const { seoFields } = require("./seoValidation");
 
 const createCategoryValidation = (data) => {
   const schema = joi.object({
@@ -27,6 +28,7 @@ const createCategoryValidation = (data) => {
       .messages({
         "string.pattern.base": "Parent category must be a valid category id",
       }),
+    ...seoFields,
 
   });
   return schema.validate(data);
@@ -60,6 +62,7 @@ const updateCategoryValidation = (data) => {
         .messages({
           "string.pattern.base": "Parent category must be a valid category id",
         }),
+      ...seoFields,
     })
     .min(1);
   return schema.validate(data);

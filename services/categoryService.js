@@ -1,8 +1,10 @@
 const Category = require('../models/categoriesModal');
 const ProductCategory = require('../models/productCategoryModel');
+const { uniqueSlug, findByKey } = require('../utils/slug');
 
 class CategoryService {
   async createCategory(data) {
+    data.slug = await uniqueSlug(Category, data.slug || data.name);
     const category = await Category.create(data);
     return {
       success: true,
@@ -49,7 +51,26 @@ class CategoryService {
     };
   }
 
+  // By id, URL slug or an older slug (website category page)
+  async getCategoryByKey(key) {
+    const category = await findByKey(Category, key, { path: "parentCategory", select: "name slug" });
+    return {
+      success: true,
+      message: "Category fetched successfully",
+      data: category ? category.toObject() : null,
+    };
+  }
+
   async updateCategory(id, data) {
+    // Slug: empty means "make it from the name"; the old one is kept so old links still work
+    const current = await Category.findById(id).select("name slug slugHistory").lean();
+    if (current && ("slug" in data || !current.slug)) {
+      const next = await uniqueSlug(Category, data.slug || data.name || current.name, id);
+      const history = (current.slugHistory || []).filter((s) => s !== next);
+      if (current.slug && current.slug !== next && !history.includes(current.slug)) history.push(current.slug);
+      data.slug = next;
+      data.slugHistory = history;
+    }
     const category = await Category.findByIdAndUpdate(id, data, {
       new: true,
     }).lean();

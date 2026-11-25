@@ -29,8 +29,9 @@ const productController = {
     return successHandler(res, 200, "Shoptolook products fetched successfully", result);
   }),
 
+  // By id, URL slug or an older slug
   getProductById: asyncHandler(async (req, res) => {
-    const result = await ProductService.getProductById(req.params.id);
+    const result = await ProductService.getProductByKey(req.params.id);
 
     if (!result.data) {
       return errorHandler(
@@ -41,6 +42,13 @@ const productController = {
     }
 
     await discountService.applyOffers([result.data]);
+    return successHandler(res, 200, result.message, result.data);
+  }),
+
+  // Products sharing the most tags first, then others from the same categories
+  getRelatedProducts: asyncHandler(async (req, res) => {
+    const result = await ProductService.getRelatedProducts(req.params.id, req.query.limit);
+    await discountService.applyOffers(result.data.products);
     return successHandler(res, 200, result.message, result.data);
   }),
 };

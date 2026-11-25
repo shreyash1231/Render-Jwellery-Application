@@ -3,6 +3,10 @@ const mongoose = require("mongoose");
 const argon2 = require("argon2");
 const envSecrets = require("./index");
 const Admin = require("../models/adminModel");
+const Product = require("../models/productsModel");
+const Category = require("../models/categoriesModal");
+const Collection = require("../models/collectionModel");
+const { backfillSlugs } = require("../utils/slug");
 
 const ensureDefaultAdmin = async () => {
   const email = "admin@yopmail.com";
@@ -47,6 +51,15 @@ const connectDatabase = async () => {
 
     // 🔐 ensure admin AFTER db connection
     await ensureDefaultAdmin();
+
+    // Readable URLs for products/categories added before slugs existed
+    try {
+      await backfillSlugs(Category, "categories");
+      await backfillSlugs(Product, "products");
+      await backfillSlugs(Collection, "collections", "title");
+    } catch (err) {
+      console.error("⚠️ Slug backfill failed:", err.message);
+    }
 
     return connection;
   } catch (error) {

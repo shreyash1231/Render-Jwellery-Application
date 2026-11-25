@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const { seoFields, tagsField } = require('./seoValidation');
 
 /* ---------- FAQ SCHEMA (REUSABLE) ---------- */
 const faqSchema = Joi.object({
@@ -86,6 +87,10 @@ const createProductValidation = (data) => {
       'array.base': 'FAQs must be an array',
       'array.max': 'Maximum 10 FAQs are allowed',
     }),
+
+    /* ---------- SEO ---------- */
+    ...seoFields,
+    tags: tagsField.optional(),
   }).unknown(false);
 
   return schema.validate(data, { abortEarly: false });
@@ -132,6 +137,10 @@ const updateProductValidation = (data) => {
 
     /* ---------- FAQs ---------- */
     faqs: Joi.array().items(faqSchema).max(10).optional(),
+
+    /* ---------- SEO ---------- */
+    ...seoFields,
+    tags: tagsField.optional(),
   })
     .min(1)
     .unknown(false);

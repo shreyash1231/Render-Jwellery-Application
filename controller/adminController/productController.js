@@ -85,6 +85,15 @@ const productController = {
       req.body.quantity = Number(req.body.quantity);
     }
 
+    // ✅ Tags come as a JSON string in multipart/form-data
+    if (typeof req.body.tags === "string") {
+      try {
+        req.body.tags = JSON.parse(req.body.tags);
+      } catch {
+        req.body.tags = req.body.tags.split(",");
+      }
+    }
+
     // 🔐 Validation
     const { error } = createProductValidation(req.body);
     if (error) {
@@ -133,6 +142,15 @@ const productController = {
         question,
         answer,
       }));
+    }
+
+    // ✅ Tags come as a JSON string in multipart/form-data
+    if (typeof req.body.tags === "string") {
+      try {
+        req.body.tags = JSON.parse(req.body.tags);
+      } catch {
+        req.body.tags = req.body.tags.split(",");
+      }
     }
 
     // 🔐 Validation

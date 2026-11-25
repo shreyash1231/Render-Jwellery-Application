@@ -29,9 +29,20 @@ const categorySchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-});
+
+  /* ---------- SEO ---------- */
+  // Readable URL: /categories/<slug>. Made from the name when left empty.
+  slug: { type: String, trim: true, lowercase: true },
+  slugHistory: { type: [String], default: [] },
+  // Empty = filled from the category name / description on the website
+  metaTitle: { type: String, trim: true, default: "" },
+  metaDescription: { type: String, trim: true, default: "" },
+  metaKeywords: { type: String, trim: true, default: "" },
+}, { timestamps: true });
 
 categorySchema.index({ name: 1 });
+categorySchema.index({ slug: 1 }, { unique: true, sparse: true });
+categorySchema.index({ slugHistory: 1 });
 categorySchema.index({ stocks: -1 });
 categorySchema.index({ parentCategory: 1 });
 

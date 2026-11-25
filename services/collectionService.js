@@ -3,6 +3,7 @@ const Category = require("../models/categoriesModal");
 const Product = require("../models/productsModel");
 const { ErrorResponse } = require("../utils/response");
 const discountService = require("./discountService");
+const { uniqueSlug, findByKey, applySlug } = require("../utils/slug");
 
 const POPULATE = [
   { path: "items.category", select: "name imageUrl" },
@@ -21,7 +22,7 @@ const clean = (collection) => {
 
 // Storefront: full product data (the cart and product cards need it), active products only
 const STOREFRONT_POPULATE = [
-  { path: "items.category", select: "name" },
+  { path: "items.category", select: "name slug" },
   { path: "items.products", match: { isActive: true }, select: "-faqs" },
 ];
 
@@ -71,6 +72,7 @@ class CollectionService {
   async createCollection(data) {
     await this.assertTitleAvailable(data.title);
     await this.assertItemsValid(data.items);
+    data.slug = await uniqueSlug(Collection, data.slug || data.title);
     const created = await Collection.create(data);
     const collection = await Collection.findById(created._id).populate(POPULATE);
 
@@ -108,12 +110,17 @@ class CollectionService {
   async updateCollection(id, data) {
     await this.assertTitleAvailable(data.title, id);
     await this.assertItemsValid(data.items);
-    const collection = await Collection.findByIdAndUpdate(id, data, {
-      new: true,
-      runValidators: true,
-    }).populate(POPULATE);
+    const doc = await Collection.findById(id);
+    if (!doc) throw new ErrorResponse("Collection not found", 404);
 
-    if (!collection) throw new ErrorResponse("Collection not found", 404);
+    // Slug: empty = made from the title; the old one is kept so old links still work
+    const { slug, ...rest } = data;
+    if (slug !== undefined || !doc.slug) {
+      await applySlug(Collection, doc, slug, rest.title || doc.title);
+    }
+    doc.set(rest);
+    await doc.save();
+    const collection = await Collection.findById(id).populate(POPULATE);
 
     return {
       success: true,
@@ -140,6 +147,7 @@ class CollectionService {
         return {
           _id: c._id,
           title: c.title,
+          slug: c.slug,
           placement: c.placement || "after_categories",
           totalProducts: products.length,
           products: limit ? products.slice(0, limit) : products,
@@ -150,11 +158,11 @@ class CollectionService {
     return { success: true, message: "Collections fetched successfully", data };
   }
 
-  async getStorefrontCollectionById(id) {
-    const collection = await Collection.findOne({ _id: id, isActive: true })
-      .populate(STOREFRONT_POPULATE)
-      .lean();
-    if (!collection) throw new ErrorResponse("Collection not found", 404);
+  // By id, URL slug or an older slug
+  async getStorefrontCollectionById(key) {
+    const found = await findByKey(Collection, key, STOREFRONT_POPULATE);
+    if (!found || !found.isActive) throw new ErrorResponse("Collection not found", 404);
+    const collection = found.toObject();
 
     const products = storefrontProducts(collection);
     await discountService.applyOffers(products);
@@ -164,6 +172,12 @@ class CollectionService {
       data: {
         _id: collection._id,
         title: collection.title,
+        slug: collection.slug,
+        description: collection.description || "",
+        metaTitle: collection.metaTitle || "",
+        metaDescription: collection.metaDescription || "",
+        metaKeywords: collection.metaKeywords || "",
+        updatedAt: collection.updatedAt,
         totalProducts: products.length,
         // Categories that still have something to show, for the filter chips
         categories: (collection.items || [])

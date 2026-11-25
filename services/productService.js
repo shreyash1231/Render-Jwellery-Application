@@ -2,6 +2,10 @@ const Product = require('../models/productsModel');
 const Category = require('../models/categoriesModal');
 const Shoptolook = require('../models/shoptolook.model');
 const ProductCategory = require('../models/productCategoryModel');
+const { uniqueSlug, findByKey } = require('../utils/slug');
+
+const cleanTags = (tags) =>
+  [...new Set((tags || []).map((t) => String(t).trim().toLowerCase()).filter(Boolean))];
 class ProductService {
 
   async createshoptolookServiceProduct(data) {
@@ -79,6 +83,9 @@ class ProductService {
     if (productData.faqs && !Array.isArray(productData.faqs)) {
       throw new Error('FAQs must be an array');
     }
+
+    productData.slug = await uniqueSlug(Product, productData.slug || productData.name);
+    if (productData.tags) productData.tags = cleanTags(productData.tags);
 
     const product = await Product.create(productData);
 
@@ -181,10 +188,93 @@ class ProductService {
     };
   }
 
+  /* ---------------- GET PRODUCT BY ID OR SLUG (website) ---------------- */
+  async getProductByKey(key) {
+    const product = await findByKey(Product, key, { path: 'categoryId', select: 'name isShopByProduct slug' });
+    if (!product) {
+      return { success: false, message: 'Product not found', data: null };
+    }
+    const discountPercent = product.mrp
+      ? Math.round(((product.mrp - product.sellingPrice) / product.mrp) * 100)
+      : 0;
+    return {
+      success: true,
+      message: 'Product fetched successfully',
+      data: { ...product.toObject(), discountPercent },
+    };
+  }
+
+  /* ---------------- RELATED PRODUCTS ---------------- */
+  // Ranked by how many tags they share with the product, then filled from its categories
+  async getRelatedProducts(key, limit = 12) {
+    const max = Math.min(Math.max(Number(limit) || 12, 1), 40);
+    const product = await findByKey(Product, key);
+    if (!product) {
+      return { success: true, message: 'Related products fetched successfully', data: { products: [] } };
+    }
+
+    const extraCategoryIds = await ProductCategory.find({ product: product._id, isActive: true }).distinct('category');
+    const categoryIds = [product.categoryId, ...extraCategoryIds].filter(Boolean);
+    const inSameCategory = await ProductCategory.find({ category: { $in: categoryIds }, isActive: true }).distinct('product');
+
+    const tags = product.tags || [];
+    const ranked = [];
+    if (tags.length) {
+      const byTags = await Product.aggregate([
+        { $match: { _id: { $ne: product._id }, isActive: true, tags: { $in: tags } } },
+        { $addFields: { shared: { $size: { $setIntersection: ['$tags', tags] } } } },
+        { $sort: { shared: -1, createdAt: -1 } },
+        { $limit: max },
+        { $project: { _id: 1 } },
+      ]);
+      ranked.push(...byTags.map((p) => p._id));
+    }
+
+    if (ranked.length < max) {
+      const fill = await Product.find({
+        _id: { $nin: [product._id, ...ranked] },
+        isActive: true,
+        $or: [{ categoryId: { $in: categoryIds } }, { _id: { $in: inSameCategory } }],
+      })
+        .sort({ createdAt: -1 })
+        .limit(max - ranked.length)
+        .select('_id')
+        .lean();
+      ranked.push(...fill.map((p) => p._id));
+    }
+
+    const docs = await Product.find({ _id: { $in: ranked } }).populate({
+      path: 'categoryId',
+      select: 'name isShopByProduct slug',
+    });
+    const order = new Map(ranked.map((id, i) => [String(id), i]));
+    const products = docs
+      .sort((a, b) => order.get(String(a._id)) - order.get(String(b._id)))
+      .map((p) => ({
+        ...p.toObject(),
+        discountPercent: p.mrp ? Math.round(((p.mrp - p.sellingPrice) / p.mrp) * 100) : 0,
+      }));
+
+    return { success: true, message: 'Related products fetched successfully', data: { products } };
+  }
+
   /* ---------------- UPDATE PRODUCT ---------------- */
   async updateProduct(productId, productData) {
     const product = await Product.findById(productId);
     if (!product) throw new Error('Product not found');
+
+    // Slug: an empty value means "make it from the name". The old one is kept so old links still work.
+    if ('slug' in productData || !product.slug) {
+      const wanted = productData.slug || productData.name || product.name;
+      const next = await uniqueSlug(Product, wanted, product._id);
+      if (product.slug && product.slug !== next && !product.slugHistory.includes(product.slug)) {
+        product.slugHistory.push(product.slug);
+      }
+      product.slugHistory = product.slugHistory.filter((s) => s !== next);
+      product.slug = next;
+      delete productData.slug;
+    }
+    if (productData.tags) productData.tags = cleanTags(productData.tags);
 
     if (
       productData.mrp &&

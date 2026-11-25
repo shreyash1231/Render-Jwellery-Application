@@ -8,4 +8,7 @@ router
   .route('/get-shop-by-prod-categories')
   .get(categoryController.getShopByProdCategories);
 
+// By id or URL slug
+router.route('/get-category/:key').get(categoryController.getCategoryByKey);
+
 module.exports = router;

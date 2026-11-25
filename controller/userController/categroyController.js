@@ -18,6 +18,14 @@ const categoryController = {
     const result = await CategoryService.getShopByProdCategories();
     return successHandler(res, 200, result.message, result.data);
   }),
+
+  getCategoryByKey: asyncHandler(async (req, res) => {
+    const result = await CategoryService.getCategoryByKey(req.params.key);
+    if (!result.data) {
+      return errorHandler({ statusCode: 404, message: "Category not found" }, req, res);
+    }
+    return successHandler(res, 200, result.message, result.data);
+  }),
 };
 
 module.exports = categoryController;
